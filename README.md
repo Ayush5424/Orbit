@@ -19,8 +19,8 @@ Prerequisites:
 Backend, including local persisted storage:
 
 ```powershell
-cd C:\Users\dell\Downloads\NEXUS\NEXUS
-.\mvnw.cmd spring-boot:run
+cd NEXUS
+./mvnw spring-boot:run
 ```
 
 Successful startup shows Spring Boot listening on port `8080`. The default database is `.\data\nexus.mv.db`; accepted work, events, workers, and releases survive backend restart.
@@ -28,7 +28,7 @@ Successful startup shows Spring Boot listening on port `8080`. The default datab
 Operator UI:
 
 ```powershell
-cd C:\Users\dell\Downloads\NEXUS\NEXUS\frontend
+cd NEXUS
 npm run dev
 ```
 
