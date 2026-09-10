@@ -130,7 +130,7 @@ function App() {
       ]);
 
       if (!statusRes.ok || !tasksRes.ok || !eventsRes.ok) {
-        throw new Error(`Backend unavailable (HTTP ${statusRes.status})`);
+        throw new Error(`Service unavailable (HTTP ${statusRes.status})`);
       }
 
       setStatus(await statusRes.json());
@@ -140,7 +140,7 @@ function App() {
       if (diagRes.ok) setDiagnostics(await diagRes.json());
       if (releasesRes.ok) setReleases(await releasesRes.json());
     } catch (error) {
-      console.warn("Backend connection poll (waking up or offline):", error);
+      console.warn("Service connection poll:", error);
     } finally {
       setIsAttemptingWake(false);
     }
@@ -282,30 +282,28 @@ function App() {
             <div className="orbit-pulse-core">🪐</div>
           </div>
 
-          <h2>Waking Up Orbit Backend</h2>
+          <h2>Connecting to Orbit</h2>
           <p className="wake-up-target">
-            Target Service: <code>{API}</code>
+            Establishing connection to Orbit platform services...
           </p>
 
           <div className="wake-up-status-card">
             <div className="wake-up-timer-bar">
               <span className="live-badge">
                 <span className="live-dot"></span>
-                {isAttemptingWake ? "Pinging Service..." : "Awaiting Wake-up"}
+                {isAttemptingWake ? "Connecting..." : "Establishing Connection"}
               </span>
               <strong>Elapsed: {wakeUpSeconds}s</strong>
             </div>
 
             <p className="wake-up-explanation">
-              {wakeUpSeconds < 4 ? (
-                "Triggering immediate wake-up call to backend on Render..."
-              ) : wakeUpSeconds < 35 ? (
-                "Render free web services spin down after 15 min of inactivity. The Docker container is currently spinning up (~30–50s)..."
-              ) : wakeUpSeconds < 70 ? (
-                "Container started! Initializing Spring Boot application context & database connection..."
-              ) : (
-                "Still awaiting backend response. Free tier cold boots can take up to 90 seconds depending on Render platform load."
-              )}
+              {wakeUpSeconds < 4
+                ? "Connecting to Orbit services..."
+                : wakeUpSeconds < 35
+                ? "Initializing application resources and preparing workspace (~30–50s)..."
+                : wakeUpSeconds < 70
+                ? "Services responding! Loading platform data and configuration..."
+                : "Still establishing connection. Please wait while initialization finishes..."}
             </p>
 
             <div className="wake-up-progress-bar">
@@ -325,13 +323,13 @@ function App() {
                 }}
                 disabled={isAttemptingWake}
               >
-                {isAttemptingWake ? "🔄 Sending Ping..." : "🔄 Ping Backend Now"}
+                {isAttemptingWake ? "🔄 Connecting..." : "🔄 Reconnect"}
               </button>
             </div>
           </div>
 
           <div className="keep-alive-note">
-            💡 <strong>Render Inactivity Solution:</strong> Once connected, this console automatically sends keep-alive heartbeats every 4 minutes so Render never sleeps while you have this tab open.
+            💡 <strong>Continuous Session:</strong> This console automatically maintains your session so data remains live and synchronized while this tab is open.
           </div>
         </div>
       ) : (
@@ -499,7 +497,7 @@ function App() {
                         <button
                           className="delete-worker-btn"
                           onClick={() => deleteWorker(worker.workerId)}
-                          title="Delete Worker from DB"
+                          title="Delete Worker"
                         >
                           ✕
                         </button>
