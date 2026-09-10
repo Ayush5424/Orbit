@@ -11,8 +11,8 @@
 	<groupId>com.NEXUS</groupId>
 	<artifactId>NEXUS</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
+	<name>Orbit</name>
+	<description>Fault-Tolerant Task Orchestration Platform</description>
 	<url/>
 	<licenses>
 		<license/>

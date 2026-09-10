@@ -1,6 +1,6 @@
-# NEXUS
+# ORBIT
 
-NEXUS is a local, single-machine task orchestration platform for the NEXUS Engineering Challenge. It accepts work through an HTTP API, persists accepted work before acknowledgement, dispatches it to logical workers, retries bounded failures with backoff, dead-letters exhausted work, records durable history, and exposes an operator console for diagnosis.
+ORBIT is a fault-tolerant task orchestration platform. It accepts work through an HTTP API, persists accepted work before acknowledgement, dispatches it to logical workers, retries bounded failures with backoff, dead-letters exhausted work, records durable history, and exposes an operator console for diagnosis.
 
 The system is intentionally small: Spring Boot + JPA + file-backed H2 for the backend, and React/Vite for the operator UI. It does not require cloud services, hosted queues, hosted databases, login, or internet access at runtime.
 
@@ -153,28 +153,42 @@ Defaults are local and offline:
 
 PostgreSQL remains available for local experiments through `DATABASE_URL` and `DB_DRIVER`, but it is not required for the challenge path.
 
-## Deploy On Render
+## Deploy On Render & 15-Minute Inactivity Fix
 
-The repository includes `render.yaml` and `Dockerfile` for Render.
+Render free-tier web services spin down after 15 minutes of inactivity. Orbit handles this automatically with multi-layer resilience:
 
-1. Push this repository to GitHub.
-2. Create a Neon Postgres database and copy its connection string.
-3. In Render, create a new Blueprint from the GitHub repo.
-4. Render provisions:
-   - `nexus-api` as a Docker web service.
-   - `nexus-operator` as a static Vite site.
-5. When Render prompts for `DATABASE_URL`, paste the Neon connection string.
-6. The app converts Neon's `postgresql://...` URL to the JDBC URL Spring needs at startup.
-7. The frontend receives `VITE_API_BASE_URL` from the API service's public `RENDER_EXTERNAL_URL`.
+1. **Automatic Frontend Wake-Up & Cold Start UX**:
+   - When you visit `https://nexus-operator.onrender.com` (or `https://orbit-operator.onrender.com`), the frontend immediately sends a wake-up ping to the backend API (`https://nexus-api-cbql.onrender.com`).
+   - While Render boots the Docker container (~30–50s), the UI displays an animated Orbit radar with live elapsed countdown, progress indicator, and automatic polling until the backend is fully awake.
+   - You never see confusing "unable to connect" crashes during cold start.
 
-Do not set `DATABASE_URL` to the local H2 path on Render. Use Neon Postgres.
+2. **Active Browser Tab Keep-Alive**:
+   - While the operator console is open in your browser, it automatically transmits background heartbeat pings to `/actuator/health` every 4 minutes.
+   - This ensures Render will **never** spin down while someone is viewing or using the platform.
 
-Important Render environment variables:
+3. **Backend Self-Ping (`KeepAliveService`)**:
+   - The Spring Boot backend includes `KeepAliveService`, which pings its own public URL every 10 minutes while active, keeping Render's 15-minute inactivity timer reset.
 
-- `DATABASE_URL`: Neon Postgres connection string.
-- `DB_DRIVER=org.postgresql.Driver`
-- `CORS_ALLOWED_ORIGIN_PATTERNS=http://localhost:5173,https://*.onrender.com`
-- `VITE_API_BASE_URL`: copied from `nexus-api` `RENDER_EXTERNAL_URL` at static-site build time.
+4. **24/7 Zero-Downtime Free Keep-Alive (Optional)**:
+   - If you want the backend to stay awake 24/7 even when no browser tabs are open:
+     1. Go to [cron-job.org](https://cron-job.org) or [UptimeRobot](https://uptimerobot.com) (free).
+     2. Add a monitor for: `https://nexus-api-cbql.onrender.com/actuator/health`
+     3. Set the interval to every **10 minutes**.
+     4. Render will register regular HTTP traffic and never shut the service down.
+
+### Renaming Deployed Services in Render
+
+To rename your deployed services on Render:
+1. Open your **Render Dashboard**.
+2. For the frontend static site:
+   - Go to **Settings** > change **Name** to `orbit-operator`.
+   - Your URL becomes `https://orbit-operator.onrender.com`.
+3. For the backend web service:
+   - Go to **Settings** > change **Name** to `orbit-api`.
+   - Your URL becomes `https://orbit-api.onrender.com`.
+4. The frontend code is pre-configured to automatically recognize both `orbit-operator` and `nexus-operator` domains and connect to the right backend.
+
+---
 
 ## Tests
 
@@ -184,3 +198,4 @@ cd C:\Users\dell\Downloads\NEXUS\NEXUS
 ```
 
 The automated tests cover duplicate acceptance, retry/backoff/dead-letter behavior, startup recovery, release rollback, cache disagreement, dependency degradation, worker restart budget, and operator-visible incident state.
+
